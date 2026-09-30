@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EYP Games</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
+    <style>
+      :root {
+        --ink: #101c33; /* navy text */
+        --ink-2: #4a5568; /* secondary text */
+        --line: #e3e6ec;
+        --accent: #e8641b; /* basketball orange */
+        --accent-ink: #b84c0f;
+        --ok: #1e8e5a;
+        --bg: #ffffff;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 400 16px/1.5 "Barlow", system-ui, sans-serif;
+      }
+      a {
+        color: var(--accent-ink);
+      }
+      button {
+        font: inherit;
+        cursor: pointer;
+      }
+      .wrap {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 0 20px 64px;
+      }
+
+      header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 28px 0 12px;
+        border-bottom: 3px solid var(--ink);
+      }
+      .brand {
+        font: 700 40px/1 "Barlow Condensed", sans-serif;
+        letter-spacing: 0.01em;
+      }
+      .brand span {
+        color: var(--accent);
+      }
+      .who {
+        font-size: 14px;
+        color: var(--ink-2);
+        text-align: right;
+      }
+      .who button {
+        background: none;
+        border: 0;
+        padding: 0;
+        color: var(--accent-ink);
+        text-decoration: underline;
+      }
+
+      .signin {
+        padding: 64px 0;
+        max-width: 520px;
+      }
+      .signin h1 {
+        font: 700 56px/1 "Barlow Condensed", sans-serif;
+        margin: 0 0 12px;
+      }
+      .signin p {
+        color: var(--ink-2);
+        margin: 0 0 28px;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--accent);
+        color: #fff;
+        border: 0;
+        border-radius: 6px;
+        padding: 14px 22px;
+        font: 600 17px "Barlow", sans-serif;
+      }
+      .btn:hover {
+        background: var(--accent-ink);
+      }
+      .btn:focus-visible,
+      .row a:focus-visible,
+      .row button:focus-visible {
+        outline: 3px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      .player {
+        margin: 24px 0 8px;
+        display: none;
+      }
+      .player.on {
+        display: block;
+      }
+      .player video {
+        width: 100%;
+        max-height: 60vh;
+        background: #000;
+        border-radius: 6px;
+      }
+      .player .now {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 12px;
+        margin: 10px 0 0;
+        font-size: 15px;
+      }
+      .player .now strong {
+        font: 600 20px "Barlow Condensed", sans-serif;
+      }
+
+      .month {
+        font: 700 26px/1 "Barlow Condensed", sans-serif;
+        margin: 36px 0 6px;
+        color: var(--ink);
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 8px 16px;
+        align-items: center;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .row .name {
+        font-weight: 600;
+      }
+      .row .meta {
+        font-size: 14px;
+        color: var(--ink-2);
+      }
+      .row button {
+        background: none;
+        border: 1.5px solid var(--ink);
+        border-radius: 6px;
+        padding: 8px 14px;
+        font-weight: 600;
+        color: var(--ink);
+      }
+      .row button:hover {
+        border-color: var(--accent);
+        color: var(--accent-ink);
+      }
+      .row a.dl {
+        font-weight: 600;
+        text-decoration: none;
+        color: var(--accent-ink);
+        border: 1.5px solid transparent;
+        padding: 8px 6px;
+      }
+      .row a.dl:hover {
+        text-decoration: underline;
+      }
+      .row.playing .name::before {
+        content: "▶ ";
+        color: var(--ok);
+      }
+
+      .note {
+        color: var(--ink-2);
+        padding: 32px 0;
+      }
+      .err {
+        background: #fff1eb;
+        border-left: 4px solid var(--accent);
+        padding: 12px 16px;
+        margin: 24px 0;
+        border-radius: 0 6px 6px 0;
+      }
+      @media (max-width: 560px) {
+        .row {
+          grid-template-columns: 1fr auto;
+        }
+        .row a.dl {
+          grid-column: 2;
+        }
+        .signin h1 {
+          font-size: 44px;
+        }
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .btn {
+          transition: background 0.15s;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div class="brand">EYP <span>Games</span></div>
+        <div class="who" id="who"></div>
+      </header>
+
+      <section class="signin" id="signin">
+        <h1>Every game, ready to watch or download.</h1>
+        <p>
+          Sign in with the email address you were invited with. If you don't
+          have a Microsoft account, choose "Send code" and use the one‑time code
+          sent to your email.
+        </p>
+        <button class="btn" id="btnSignIn">Sign in</button>
+      </section>
+
+      <section class="player" id="player">
+        <video id="video" controls playsinline preload="metadata"></video>
+        <div class="now">
+          <strong id="nowName"></strong
+          ><a id="nowDl" href="#" download>Download this game</a>
+        </div>
+      </section>
+
+      <div id="list"></div>
+    </div>
+
+    <script>
+      /* ============================================================
+   CONFIG — fill in these five values
+   ============================================================ */
+      const CONFIG = {
+        clientId: "3439326a-c3f5-4a95-8eca-67cf1f92b89e", // Entra app registration → Overview → Application (client) ID
+        tenantId: "67e8a083-b7b1-4343-bca9-f0395c603296", // Entra app registration → Overview → Directory (tenant) ID
+        hostname: "https://powerplatformsavage.sharepoint.com/", // your SharePoint hostname
+        sitePath: "/sites/EYPGames", // site URL path (after the hostname)
+        library: "Games", // document library name
+      };
+      /* ============================================================ */
+
+      const msalApp = new msal.PublicClientApplication({
+        auth: {
+          clientId: CONFIG.clientId,
+          authority: `https://login.microsoftonline.com/${CONFIG.tenantId}`,
+          redirectUri: window.location.origin + window.location.pathname,
+        },
+        cache: { cacheLocation: "localStorage" },
+      });
+      const SCOPES = ["User.Read", "Files.Read.All"];
+
+      const $ = (id) => document.getElementById(id);
+      let account = null;
+
+      async function init() {
+        await msalApp.handleRedirectPromise();
+        const accts = msalApp.getAllAccounts();
+        if (accts.length) {
+          account = accts[0];
+        }
+        render();
+        if (account) loadGames();
+      }
+
+      function render() {
+        $("signin").style.display = account ? "none" : "block";
+        $("who").innerHTML = account
+          ? `${
+              account.name || account.username
+            } · <button id="btnOut">Sign out</button>`
+          : "";
+        if (account)
+          $("btnOut").onclick = () => msalApp.logoutRedirect({ account });
+      }
+
+      $("btnSignIn").onclick = () => msalApp.loginRedirect({ scopes: SCOPES });
+
+      async function token() {
+        try {
+          return (await msalApp.acquireTokenSilent({ scopes: SCOPES, account }))
+            .accessToken;
+        } catch {
+          return msalApp.acquireTokenRedirect({ scopes: SCOPES });
+        }
+      }
+
+      async function graph(path) {
+        const t = await token();
+        const r = await fetch("https://graph.microsoft.com/v1.0" + path, {
+          headers: { Authorization: "Bearer " + t },
+        });
+        if (!r.ok) throw new Error(`${r.status} ${r.statusText} — ${path}`);
+        return r.json();
+      }
+
+      async function loadGames() {
+        const list = $("list");
+        list.innerHTML = `<p class="note">Loading games…</p>`;
+        try {
+          const site = await graph(
+            `/sites/${CONFIG.hostname}:${CONFIG.sitePath}`
+          );
+          const drives = await graph(`/sites/${site.id}/drives`);
+          const drive = drives.value.find((d) => d.name === CONFIG.library);
+          if (!drive)
+            throw new Error(
+              `Library "${CONFIG.library}" not found on the site.`
+            );
+
+          const files = [];
+          const walk = async (itemPath) => {
+            const res = await graph(
+              `/drives/${drive.id}${itemPath}/children?$select=id,name,size,lastModifiedDateTime,file,folder,video,@microsoft.graph.downloadUrl&$top=200`
+            );
+            for (const it of res.value) {
+              if (it.folder) await walk(`/items/${it.id}`);
+              else if (it.file && /\.(mp4|mov|m4v|webm)$/i.test(it.name))
+                files.push(it);
+            }
+          };
+          await walk("/root");
+          if (!files.length) {
+            list.innerHTML = `<p class="note">No games uploaded yet. Check back after the next game.</p>`;
+            return;
+          }
+
+          files.sort((a, b) => gameDate(b) - gameDate(a));
+          list.innerHTML = "";
+          let lastMonth = "";
+          for (const f of files) {
+            const d = gameDate(f);
+            const month = d.toLocaleDateString(undefined, {
+              month: "long",
+              year: "numeric",
+            });
+            if (month !== lastMonth) {
+              list.insertAdjacentHTML(
+                "beforeend",
+                `<h2 class="month">${month}</h2>`
+              );
+              lastMonth = month;
+            }
+            const row = document.createElement("div");
+            row.className = "row";
+            row.id = "row-" + f.id;
+            row.innerHTML = `
+        <div><div class="name">${esc(title(f))}</div>
+             <div class="meta">${d.toLocaleDateString(undefined, {
+               weekday: "short",
+               month: "short",
+               day: "numeric",
+             })} · ${fmtSize(f.size)}</div></div>
+        <button type="button">Play</button>
+        <a class="dl" href="${
+          f["@microsoft.graph.downloadUrl"]
+        }" download="${esc(f.name)}">Download</a>`;
+            row.querySelector("button").onclick = () => play(f, row);
+            list.appendChild(row);
+          }
+        } catch (e) {
+          list.innerHTML = `<div class="err"><strong>Couldn't load the games.</strong><br>${esc(
+            e.message
+          )}<br>If this keeps happening, ask the site owner to check your access.</div>`;
+        }
+      }
+
+      function play(f, row) {
+        document
+          .querySelectorAll(".row.playing")
+          .forEach((r) => r.classList.remove("playing"));
+        row.classList.add("playing");
+        const p = $("player");
+        p.classList.add("on");
+        $("video").src = f["@microsoft.graph.downloadUrl"];
+        $("video").play();
+        $("nowName").textContent = title(f);
+        $("nowDl").href = f["@microsoft.graph.downloadUrl"];
+        $("nowDl").download = f.name;
+        p.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      /* File name convention: "2026-09-27 vs Suns.mp4" → date from name; otherwise modified date */
+      function gameDate(f) {
+        const m = f.name.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        return m
+          ? new Date(+m[1], +m[2] - 1, +m[3])
+          : new Date(f.lastModifiedDateTime);
+      }
+      function title(f) {
+        return f.name
+          .replace(/\.[^.]+$/, "")
+          .replace(/^\d{4}-\d{2}-\d{2}\s*[-–_]?\s*/, "");
+      }
+      function fmtSize(b) {
+        return b > 1e9
+          ? (b / 1e9).toFixed(1) + " GB"
+          : Math.round(b / 1e6) + " MB";
+      }
+      function esc(s) {
+        return String(s).replace(
+          /[&<>"']/g,
+          (c) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            }[c])
+        );
+      }
+
+      init();
+    </script>
+  </body>
+</html>
